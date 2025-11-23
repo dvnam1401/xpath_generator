@@ -1,75 +1,89 @@
-# Smart XPath Generator
-
-Công cụ tạo XPath tự động (Smart XPath Generator) — giúp Tester hoặc Dev nhanh chóng tạo các XPath ổn định từ đoạn HTML được dán vào trình duyệt.
-
-Ứng dụng này là một công cụ client-side (chạy hoàn toàn trên trình duyệt) được viết bằng HTML/CSS/Vanilla JS. Mục tiêu: giảm thời gian viết XPath thủ công, cung cấp nhiều phương án XPath sắp xếp theo độ ưu tiên và có nút copy nhanh.
-
-## 🎯 Tính năng chính
-- ✨ Phân tích đoạn HTML (paste outerHTML) và sinh nhiều XPath gợi ý.
-- 📊 Xếp hạng theo độ ổn định: ID → Text → Unique attributes → Class → Class+Text.
-- 🛡️ Xử lý whitespace và ký tự đặc biệt trong nội dung (ví dụ dấu nháy đơn).
-- 🏷️ Mỗi kết quả có nhãn (badge) để biết nhanh loại chiến lược (ID, Text, Class, ...).
-- 🚀 Hoàn toàn chạy client-side, không cần server.
-
-## 📋 Luồng sử dụng
-1. Mở trang cần lấy phần tử, F12 → copy outerHTML phần tử mong muốn.
-2. Mở ứng dụng, dán đoạn HTML vào khung bên trái.
-3. Nhấn "Phân tích" để nhận danh sách XPath gợi ý ở khung bên phải.
-4. Bấm "Copy" trên phương án bạn chọn.
-
-## 🚀 Cách chạy (phát triển)
-Yêu cầu: Node.js (để chạy dev server với Vite)
-
-1. Cài phụ thuộc:
-
-```bash
-npm install
-```
-
-2. Chạy chế độ phát triển:
-
-```bash
-npm run dev
-```
-
-3. Xây dựng để deploy:
-
-```bash
-npm run build
-```
-
-## 🧠 Logic & Thiết kế
-### Xếp hạng ưu tiên XPath
-- **Ưu tiên 1 — ID**: Nếu có `id`, sinh XPath theo ID (mạnh nhất, duy nhất trên trang).
-- **Ưu tiên 2 — Text**: So sánh chính xác cho text ngắn; dùng `contains()` cho text dài (lấy khoảng 20 ký tự đầu).
-- **Ưu tiên 3 — Unique attributes**: `name`, `placeholder`, `title`, `data-testid`, ...
-- **Ưu tiên 4 — Class**: Dùng chuỗi class đầy đủ khi phù hợp.
-- **Ưu tiên 5 — Kết hợp Class + Text**: Tăng độ chính xác cực đại khi class bị trùng lặp.
-
-### Giao diện đề xuất
-- Chia đôi màn hình: **Input bên trái**, **Output bên phải**.
-- Mỗi kết quả kèm **badge màu** để nhận biết nhanh chiến lược.
-- Nút **"Copy nhanh"** ở mỗi dòng kết quả.
-
-## 🛠️ Mục tiêu kỹ thuật
-- **Thuần client-side**: HTML5, CSS3, JavaScript (Vanilla).
-- **Dễ chia sẻ**: Chỉ cần gửi 1 thư mục / file tĩnh.
-- **Độc lập**: Không cần Python, Server hay công nghệ phục tạp.
-
-## 🤝 Đóng góp
-- Fork repository, tạo branch feature.
-- Sửa/thêm tính năng, viết mô tả rõ ràng cho PR.
-- Test các thay đổi trong dev mode trước khi gửi PR.
-
-## 🗺️ Roadmap ngắn hạn
-- ✅ Hoàn thiện thuật toán xếp hạng, xử lý edge-case (text chứa nháy, whitespace, HTML malformed).
-- ✅ Thêm test đơn vị cho module sinh XPath.
-- ✅ Thêm guide hướng dẫn cách copy outerHTML chuẩn từ các trình duyệt.
-- ✅ Cải thiện giao diện UX/UI.
-
-## 📄 License
-Chưa chỉ định; thêm LICENSE nếu muốn chia sẻ công khai.
+<div align="center">
+  <img src="https://via.placeholder.com/1200x300?text=Smart+XPath+Generator" alt="Banner" width="100%" />
+  <h1>Smart XPath Generator</h1>
+  <p>
+    <strong>Trợ lý AI tạo Locator thông minh cho Selenium, Playwright, Cypress, Appium</strong>
+  </p>
+</div>
 
 ---
 
-**Lưu ý:** Dự án này được phát triển để giải quyết vấn đề mất thời gian viết XPath thủ công trong Selenium Automation Testing. Bằng cách dán HTML và nhận ngay danh sách XPath gợi ý, quy trình kiểm thử trở nên nhanh hơn và hiệu quả hơn.
+## 📖 Giới thiệu
+**Smart XPath Generator** là công cụ hỗ trợ Automation Tester và Developer tự động phân tích mã HTML và sinh ra các chiến lược định vị (Locator Strategies) tối ưu nhất. 
+
+Khác với các công cụ thông thường chỉ tạo XPath tuyệt đối, hệ thống này sử dụng các thuật toán Heuristics và AI để:
+- Đánh giá độ ổn định (Stability).
+- Phát hiện ID động/sinh ngẫu nhiên.
+- Tìm kiếm theo ngữ nghĩa (Semantic) và ngữ cảnh (Context).
+- Tự động quét và gợi ý các phần tử tương tác bên trong (Deep Scan).
+
+## 🌟 Tính năng nổi bật
+
+### 1. Đa Nền Tảng & Đa Ngôn Ngữ
+Hỗ trợ sinh code native cho các Framework và Ngôn ngữ phổ biến:
+- **Tools:** Selenium, Playwright, Cypress, Appium, Katalon, Robot Framework.
+- **Languages:** Java, Python, C#, JavaScript/TypeScript, Ruby, Groovy.
+
+### 2. Deep Scan (Quét Sâu Thông Minh) 🧠
+Không chỉ phân tích thẻ bạn dán vào. Nếu bạn dán một đoạn HTML lớn (ví dụ: cả `form` đăng nhập), công cụ sẽ:
+- Tự động phát hiện thẻ chứa (Container).
+- Quét tìm tất cả các phần tử tương tác bên trong (`input`, `button`, `a`, `select`...).
+- Đặt tên gợi nhớ cho từng phần tử (VD: "Input: Username", "Button: Login").
+
+### 3. Chiến Lược Locator Tối Ưu
+Hệ thống tự động xếp hạng các Locator dựa trên "Best Practices":
+- **Playwright:** Ưu tiên `getByRole`, `getByPlaceholder`, `getByTestId`.
+- **Selenium:** Ưu tiên `ID` > `Name` > `LinkText` > `CSS` > `XPath`.
+- **Form Handling:** Tự động liên kết `Label` với `Input` để tạo XPath bền vững.
+- **Xử lý Trùng lặp:** Tự động thêm chỉ số (Index) an toàn khi phát hiện nhiều phần tử giống nhau.
+
+### 4. Page Object Model (POM) Generator 📦
+- Tự động gom nhóm tất cả các Locator tìm được.
+- Xuất ra mã nguồn Class hoàn chỉnh (Java/C#/Python/TS).
+- Tự động đặt tên biến chuẩn (CamelCase/SnakeCase) và xử lý trùng tên biến.
+
+### 5. Tích hợp AI (Gemini) 🤖
+- Giải thích chi tiết ý nghĩa của từng Locator.
+- Đề xuất các phương án thay thế khi thuật toán bí.
+
+## 🚀 Cài đặt & Chạy Local
+
+Yêu cầu: **Node.js** (v16 trở lên)
+
+1. **Clone dự án & Cài đặt dependencies:**
+   ```bash
+   npm install
+Cấu hình Environment: Tạo file .env.local tại thư mục gốc và thêm API Key (nếu dùng tính năng AI):
+
+Đoạn mã
+
+GEMINI_API_KEY=your_api_key_here
+Chạy ứng dụng:
+
+Bash
+
+npm run dev
+Truy cập: http://localhost:3000 (hoặc port hiển thị trên terminal).
+
+Build để Deploy:
+
+Bash
+
+npm run build
+💡 Hướng dẫn sử dụng nhanh
+Mở trang web cần test, nhấn F12 (DevTools).
+
+Chuột phải vào phần tử (hoặc khối cha bao quanh) -> Copy -> Copy outerHTML.
+
+Dán vào công cụ Smart XPath Generator.
+
+(Tùy chọn) Bật chế độ "Quét Sâu" (Deep Scan) để lấy toàn bộ phần tử con.
+
+Chọn Tool và Ngôn ngữ mong muốn trên thanh Header.
+
+Sao chép Locator hoặc xuất toàn bộ thành file POM.
+
+🤝 Đóng góp
+Dự án mã nguồn mở. Mọi đóng góp (Pull Request, Issue) đều được hoan nghênh!
+
+© 2025 dvnam1401.
