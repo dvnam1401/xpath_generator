@@ -92,7 +92,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, language }) =>
               </button>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {t.api_key_note} <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+              {t.api_key_note}
             </p>
           </div>
 

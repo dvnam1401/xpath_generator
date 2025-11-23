@@ -1,6 +1,9 @@
-import { AISettings } from '../types';
+
+import { AISettings, TestTool, ProgrammingLanguage } from '../types';
 
 const SETTINGS_KEY = 'xpath_gen_ai_settings';
+const TOOL_KEY = 'xpath_gen_tool';
+const LANG_KEY = 'xpath_gen_language';
 
 export const getSettings = (): AISettings => {
   try {
@@ -24,5 +27,29 @@ export const saveSettings = (settings: AISettings) => {
 
 export const hasApiKey = (): boolean => {
   const settings = getSettings();
-  return !!settings.apiKey || !!process.env.API_KEY;
+  return !!settings.apiKey;
+};
+
+export const getStoredTool = (): TestTool => {
+  try {
+    return (localStorage.getItem(TOOL_KEY) as TestTool) || 'selenium';
+  } catch {
+    return 'selenium';
+  }
+};
+
+export const saveStoredTool = (tool: TestTool) => {
+  localStorage.setItem(TOOL_KEY, tool);
+};
+
+export const getStoredLanguage = (): ProgrammingLanguage => {
+  try {
+    return (localStorage.getItem(LANG_KEY) as ProgrammingLanguage) || 'java';
+  } catch {
+    return 'java';
+  }
+};
+
+export const saveStoredLanguage = (lang: ProgrammingLanguage) => {
+  localStorage.setItem(LANG_KEY, lang);
 };

@@ -1,21 +1,25 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { XPathResultCard } from './components/XPathResultCard';
 import { ChatWidget } from './components/ChatWidget';
 import { HistoryModal } from './components/HistoryModal';
 import { SettingsModal } from './components/SettingsModal';
-import { generateXPaths } from './utils/xpathGenerator';
+import { generateXPaths, TOOL_LANGUAGES } from './utils/xpathGenerator';
 import { getHistory, saveHistoryItem, clearHistory, checkExpiration, updateLastActive } from './utils/historyStorage';
 import { getStoredLanguage, saveLanguage, translations } from './utils/translations';
-import { XPathResult, HistoryItem, Language } from './types';
+import { getStoredTool, saveStoredTool, getStoredLanguage as getStoredProgLang, saveStoredLanguage as saveStoredProgLang } from './utils/settingsStorage';
+import { GeneratedLocator, HistoryItem, Language, TestTool, ProgrammingLanguage } from './types';
 
 function App() {
   const [htmlInput, setHtmlInput] = useState('');
-  const [results, setResults] = useState<XPathResult[]>([]);
+  const [results, setResults] = useState<GeneratedLocator[]>([]);
   const [error, setError] = useState<string | null>(null);
   
-  // Language State
+  // Language (UI) & Framework (Tool/Code) State
   const [language, setLanguage] = useState<Language>(getStoredLanguage());
+  const [tool, setTool] = useState<TestTool>(getStoredTool());
+  const [progLang, setProgLang] = useState<ProgrammingLanguage>(getStoredProgLang());
   
   // History State
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
@@ -32,25 +36,41 @@ function App() {
     saveLanguage(newLang);
   };
 
-  // Re-process results when language changes
+  const handleToolChange = (newTool: TestTool) => {
+    setTool(newTool);
+    saveStoredTool(newTool);
+    
+    // Automatically switch programming language if the current one isn't supported by the new tool
+    const supportedLangs = TOOL_LANGUAGES[newTool] || [];
+    if (!supportedLangs.includes(progLang)) {
+      const defaultLang = supportedLangs[0];
+      if (defaultLang) {
+        setProgLang(defaultLang);
+        saveStoredProgLang(defaultLang);
+      }
+    }
+  };
+
+  const handleProgLangChange = (newLang: ProgrammingLanguage) => {
+    setProgLang(newLang);
+    saveStoredProgLang(newLang);
+  };
+
+  // Re-process results when language or framework changes
   useEffect(() => {
     if (htmlInput.trim()) {
       handleProcess();
     }
-  }, [language]);
+  }, [language, tool, progLang]);
 
   // Initialize history and check expiration periodically
   useEffect(() => {
-    // Load initial history
     setHistoryItems(getHistory());
-
-    // Check for expiration every 30 seconds
     const intervalId = setInterval(() => {
       if (checkExpiration()) {
-        setHistoryItems([]); // Clear local state if storage expired
+        setHistoryItems([]);
       }
     }, 30000);
-
     return () => clearInterval(intervalId);
   }, []);
 
@@ -58,7 +78,6 @@ function App() {
     const inputToProcess = inputOverride ?? htmlInput;
 
     if (!inputToProcess.trim()) {
-      // Only set error if it was a user action, not automatic effect
       if (!inputOverride && htmlInput.trim() === '') {
         setError(t.input.error_empty);
         setResults([]);
@@ -68,19 +87,16 @@ function App() {
 
     try {
       setError(null);
-      // Basic validation: ensure it looks like HTML
       if (!/<[a-z][\s\S]*>/i.test(inputToProcess)) {
         setError(t.input.error_invalid);
         setResults([]);
         return;
       }
       
-      const generated = generateXPaths(inputToProcess, language);
+      const generated = generateXPaths(inputToProcess, language, tool, progLang);
       if (generated.length === 0) {
         setError(t.input.error_failed);
       } else {
-         // Success - Save to history
-         // Note: we save the snippet, re-generating later might show different descriptions if lang changed, which is good.
          const newItem: HistoryItem = {
            id: Date.now().toString(),
            htmlSnippet: inputToProcess,
@@ -97,7 +113,6 @@ function App() {
     }
   };
 
-  // Auto-process on paste after a short delay for better UX
   useEffect(() => {
     const timer = setTimeout(() => {
       if (htmlInput.trim()) {
@@ -111,8 +126,7 @@ function App() {
 
   const restoreHistoryItem = (item: HistoryItem) => {
     setHtmlInput(item.htmlSnippet);
-    // Regenerate to ensure language consistency
-    const generated = generateXPaths(item.htmlSnippet, language);
+    const generated = generateXPaths(item.htmlSnippet, language, tool, progLang);
     setResults(generated);
     setError(null);
     setIsHistoryOpen(false);
@@ -131,11 +145,14 @@ function App() {
         onSettingsClick={() => setIsSettingsOpen(true)}
         language={language}
         onToggleLanguage={toggleLanguage}
+        tool={tool}
+        onToolChange={handleToolChange}
+        progLang={progLang}
+        onProgLangChange={handleProgLangChange}
       />
       
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Left Column: Input */}
         <div className="flex flex-col h-full">
           <div className="mb-2 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-slate-700 flex items-center">
@@ -167,7 +184,6 @@ function App() {
           </p>
         </div>
 
-        {/* Right Column: Output */}
         <div className="flex flex-col h-full">
           <div className="mb-2">
             <h2 className="text-lg font-semibold text-slate-700 flex items-center">

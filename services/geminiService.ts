@@ -76,7 +76,7 @@ class GroqChatSession implements IChatSession {
 
 export const createChatSession = (lang: Language = 'en'): IChatSession => {
   const settings = getSettings();
-  const apiKey = settings.apiKey || process.env.API_KEY || '';
+  const apiKey = settings.apiKey || '';
   const model = settings.model || 'gemini-3-pro-preview';
   const systemLang = lang === 'vi' ? 'Vietnamese' : 'English';
   
@@ -104,7 +104,7 @@ export const createChatSession = (lang: Language = 'en'): IChatSession => {
 
 export const generateExplanation = async (xpath: string, htmlContext: string, lang: Language = 'en'): Promise<string> => {
   const settings = getSettings();
-  const apiKey = settings.apiKey || process.env.API_KEY;
+  const apiKey = settings.apiKey;
   const model = settings.model || 'gemini-2.5-flash';
   
   if (!apiKey) {

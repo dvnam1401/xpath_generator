@@ -1,18 +1,45 @@
+
 export enum PriorityLevel {
-  ID = 1,
-  TEXT = 2,
-  ATTRIBUTE = 3,
-  CLASS = 4,
-  COMBINATION = 5,
-  GENERIC = 6
+  ROBUST_ID = 1,       // By.id (Safe)
+  NAME = 2,            // By.name
+  LINK_TEXT = 3,       // By.linkText
+  CSS_ID = 4,          // css=#id
+  CSS_CLASS = 5,       // css=.class
+  CSS_ATTR = 6,        // css=[attr=val]
+  XPATH_TEXT = 7,      // xpath=//*[text()='...']
+  XPATH_LABEL = 8,     // xpath=//label.../input (New Strategy)
+  XPATH_COMPLEX = 9,   // xpath complex
+  DYNAMIC_ID = 10      // By.id (Unsafe/Dynamic)
 }
 
-export interface XPathResult {
+export type LocatorMethod = 'id' | 'name' | 'linkText' | 'partialLinkText' | 'css' | 'xpath';
+
+export type TestTool = 
+  | 'selenium' 
+  | 'playwright' 
+  | 'cypress' 
+  | 'appium' 
+  | 'katalon' 
+  | 'robot';
+
+export type ProgrammingLanguage = 
+  | 'java' 
+  | 'python' 
+  | 'csharp' 
+  | 'javascript' 
+  | 'typescript' 
+  | 'ruby' 
+  | 'groovy' 
+  | 'robot'; // Robot syntax is unique
+
+export interface GeneratedLocator {
   id: string;
-  xpath: string;
+  method: LocatorMethod;
+  value: string;         // The raw locator string (e.g., "submit-btn", "//div...")
+  codeSnippet: string;   // Generated code for specific framework
   priority: PriorityLevel;
   description: string;
-  category: 'ID' | 'Text' | 'Attribute' | 'Class' | 'Combo';
+  stability: 'High' | 'Medium' | 'Low';
 }
 
 export interface ChatMessage {
@@ -25,7 +52,7 @@ export interface ChatMessage {
 export interface HistoryItem {
   id: string;
   htmlSnippet: string;
-  results: XPathResult[];
+  results: GeneratedLocator[];
   timestamp: number;
 }
 
