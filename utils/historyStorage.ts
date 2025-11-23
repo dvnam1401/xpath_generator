@@ -1,6 +1,7 @@
-import { HistoryItem } from '../types';
+import { HistoryItem, ChatMessage } from '../types';
 
 const STORAGE_KEY = 'xpath_gen_history';
+const CHAT_STORAGE_KEY = 'xpath_gen_chat_history';
 const LAST_ACTIVE_KEY = 'xpath_gen_last_active';
 const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -40,7 +41,7 @@ export const getHistory = (): HistoryItem[] => {
 };
 
 export const saveHistoryItem = (item: HistoryItem): HistoryItem[] => {
-  // Check if session expired before adding; if so, we start fresh (but keeping current item)
+  // Check if session expired before adding; if so, we start fresh
   if (checkExpiration()) {
      // History was cleared by checkExpiration
   }
@@ -64,9 +65,29 @@ export const saveHistoryItem = (item: HistoryItem): HistoryItem[] => {
   return updated;
 };
 
+// --- Chat History Logic ---
+
+export const getChatHistory = (): ChatMessage[] => {
+  if (checkExpiration()) return [];
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+export const saveChatHistory = (messages: ChatMessage[]) => {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    updateLastActive();
+  } catch (e) {
+    console.error('Failed to save chat history', e);
+  }
+};
+
 export const clearHistory = () => {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
     localStorage.removeItem(LAST_ACTIVE_KEY);
   } catch (e) {}
 };

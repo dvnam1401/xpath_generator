@@ -1,5 +1,5 @@
 {
   "name": "Smart XPath Generator",
-  "description": "An intelligent tool for Selenium automation testers to instantly generate optimized XPath selectors from raw HTML snippets.",
+  "description": "An intelligent tool for Selenium automation testers to instantly generate optimized XPath selectors from raw HTML snippets, powered by algorithmic heuristics and Gemini AI.",
   "requestFramePermissions": []
 }

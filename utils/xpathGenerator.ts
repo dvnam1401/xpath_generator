@@ -1,4 +1,5 @@
-import { PriorityLevel, XPathResult } from '../types';
+import { PriorityLevel, XPathResult, Language } from '../types';
+import { translations } from './translations';
 
 /**
  * Parses raw HTML string into a DOM element.
@@ -22,9 +23,10 @@ const escapeXPathText = (text: string): string => {
   return `'${text}'`;
 };
 
-export const generateXPaths = (rawHtml: string): XPathResult[] => {
+export const generateXPaths = (rawHtml: string, lang: Language = 'en'): XPathResult[] => {
   const results: XPathResult[] = [];
   const element = parseHTML(rawHtml);
+  const t = translations[lang].generator;
 
   if (!element) return [];
 
@@ -36,7 +38,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
       id: 'strategy-id',
       xpath: `//${tagName}[@id='${element.id}']`,
       priority: PriorityLevel.ID,
-      description: 'Highest stability. IDs are unique identifiers.',
+      description: t.id,
       category: 'ID'
     });
   }
@@ -53,7 +55,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
         id: 'strategy-text-exact',
         xpath: `//${tagName}[normalize-space()=${escapedText}]`,
         priority: PriorityLevel.TEXT,
-        description: 'Excellent for buttons and labels. Uses exact text match.',
+        description: t.text_exact,
         category: 'Text'
       });
     }
@@ -66,7 +68,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
       id: 'strategy-text-contains',
       xpath: `//${tagName}[contains(text(), ${escapedSubText})]`,
       priority: PriorityLevel.TEXT,
-      description: 'Robust against whitespace changes. Checks if text contains value.',
+      description: t.text_contains,
       category: 'Text'
     });
   }
@@ -87,7 +89,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
         id: `strategy-attr-${attr}`,
         xpath: `//${tagName}[@${attr}='${val}']`,
         priority: priority,
-        description: `Based on '${attr}' attribute. Usually stable.`,
+        description: t.attr_base(attr),
         category: 'Attribute'
       });
     }
@@ -106,7 +108,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
         id: 'strategy-class-exact',
         xpath: `//${tagName}[@class='${element.className.trim()}']`,
         priority: PriorityLevel.CLASS,
-        description: 'Matches exact class string. Fragile if classes change dynamically.',
+        description: t.class_exact,
         category: 'Class'
       });
 
@@ -118,7 +120,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
             id: 'strategy-class-contains',
             xpath: `//${tagName}[contains(@class, '${longestClass}')]`,
             priority: PriorityLevel.CLASS,
-            description: `Matches partial class '${longestClass}'.`,
+            description: t.class_contains(longestClass),
             category: 'Class'
           });
       }
@@ -133,7 +135,7 @@ export const generateXPaths = (rawHtml: string): XPathResult[] => {
           id: 'strategy-combo',
           xpath: `//${tagName}[contains(@class, '${element.className.split(' ')[0]}') and text()=${escapedText}]`,
           priority: PriorityLevel.COMBINATION,
-          description: 'High specificity. Requires both Class and Text match.',
+          description: t.combo,
           category: 'Combo'
       });
   }

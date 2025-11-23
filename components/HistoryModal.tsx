@@ -1,5 +1,6 @@
 import React from 'react';
-import { HistoryItem } from '../types';
+import { HistoryItem, Language } from '../types';
+import { translations } from '../utils/translations';
 
 interface Props {
   isOpen: boolean;
@@ -7,9 +8,12 @@ interface Props {
   historyItems: HistoryItem[];
   onSelect: (item: HistoryItem) => void;
   onClear: () => void;
+  language: Language;
 }
 
-export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, onSelect, onClear }) => {
+export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, onSelect, onClear, language }) => {
+  const t = translations[language].history;
+
   if (!isOpen) return null;
 
   return (
@@ -23,7 +27,7 @@ export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, o
             <svg className="w-5 h-5 mr-2 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Recent Activity
+            {t.title}
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition p-1 rounded-full hover:bg-slate-200">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,8 +42,8 @@ export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, o
               <svg className="w-12 h-12 mb-3 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p>No history found.</p>
-              <p className="text-xs mt-1 text-slate-400">History is automatically cleared after 15 minutes of inactivity.</p>
+              <p>{t.empty}</p>
+              <p className="text-xs mt-1 text-slate-400">{t.empty_tip}</p>
             </div>
           ) : (
             historyItems.map((item) => (
@@ -54,7 +58,7 @@ export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, o
                       {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
-                      {item.results.length} Results
+                      {item.results.length} {t.results_count}
                     </span>
                   </div>
                   <code className="block text-xs text-slate-700 font-mono truncate bg-slate-50 p-1.5 rounded border border-slate-100 w-full">
@@ -62,7 +66,7 @@ export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, o
                   </code>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity self-end sm:self-center">
-                   <span className="text-blue-600 text-xs font-semibold px-3 py-1 bg-blue-100 rounded-full">Load</span>
+                   <span className="text-blue-600 text-xs font-semibold px-3 py-1 bg-blue-100 rounded-full">{t.load}</span>
                 </div>
               </div>
             ))
@@ -72,14 +76,14 @@ export const HistoryModal: React.FC<Props> = ({ isOpen, onClose, historyItems, o
         <div className="p-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center text-xs">
             <span className="text-slate-400 flex items-center">
               <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-              Auto-expires after 15m inactivity
+              {t.auto_expire}
             </span>
             {historyItems.length > 0 && (
                 <button 
                   onClick={onClear}
                   className="text-red-500 hover:text-red-700 font-medium px-2 py-1 hover:bg-red-50 rounded transition"
                 >
-                  Clear History
+                  {t.clear_btn}
                 </button>
             )}
         </div>

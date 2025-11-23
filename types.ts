@@ -28,3 +28,14 @@ export interface HistoryItem {
   results: XPathResult[];
   timestamp: number;
 }
+
+export interface AISettings {
+  apiKey: string;
+  model: string;
+}
+
+export type Language = 'en' | 'vi';
+
+export interface IChatSession {
+  sendMessage(text: string): Promise<string>;
+}

@@ -1,17 +1,51 @@
 import React, { useState } from 'react';
-import { XPathResult, PriorityLevel } from '../types';
+import { XPathResult, PriorityLevel, Language } from '../types';
+import { generateExplanation } from '../services/geminiService';
+import { hasApiKey } from '../utils/settingsStorage';
+import { translations } from '../utils/translations';
 
 interface Props {
   result: XPathResult;
+  rawHtml: string;
+  onOpenSettings: () => void;
+  language: Language;
 }
 
-export const XPathResultCard: React.FC<Props> = ({ result }) => {
+export const XPathResultCard: React.FC<Props> = ({ result, rawHtml, onOpenSettings, language }) => {
   const [copied, setCopied] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  
+  const t = translations[language].card;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(result.xpath);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExplain = async () => {
+    if (!hasApiKey()) {
+      onOpenSettings();
+      return;
+    }
+
+    if (explanation) {
+      setShowExplanation(!showExplanation);
+      return;
+    }
+
+    setLoading(true);
+    setShowExplanation(true);
+    try {
+      const text = await generateExplanation(result.xpath, rawHtml, language);
+      setExplanation(text);
+    } catch (e) {
+      setExplanation(t.error_ai);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getBadgeColor = (category: string) => {
@@ -33,7 +67,7 @@ export const XPathResultCard: React.FC<Props> = ({ result }) => {
         {result.priority === PriorityLevel.ID && (
           <span className="flex items-center text-xs text-emerald-600 font-medium">
             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-            Best Choice
+            {t.best_choice}
           </span>
         )}
       </div>
@@ -45,7 +79,7 @@ export const XPathResultCard: React.FC<Props> = ({ result }) => {
         <button
           onClick={handleCopy}
           className="absolute top-2 right-2 p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-50 transition shadow-sm"
-          title="Copy to clipboard"
+          title={t.copy_tooltip}
         >
           {copied ? (
             <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,9 +93,37 @@ export const XPathResultCard: React.FC<Props> = ({ result }) => {
         </button>
       </div>
 
-      <div className="mt-3 flex items-end justify-between">
-        <p className="text-sm text-slate-500">{result.description}</p>
+      <div className="mt-3 flex flex-wrap gap-2 items-end justify-between">
+        <p className="text-sm text-slate-500 flex-1 min-w-[200px]">{result.description}</p>
+        <button 
+          onClick={handleExplain}
+          className="flex items-center text-xs text-purple-600 hover:text-purple-700 font-medium transition whitespace-nowrap"
+        >
+          <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          {t.explain_btn}
+        </button>
       </div>
+
+      {showExplanation && (
+        <div className="mt-4 bg-indigo-50 rounded-lg p-3 border border-indigo-100 text-xs text-slate-700 animate-fadeIn">
+          {loading ? (
+            <div className="flex items-center space-x-2 text-indigo-400">
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <span>{t.analyzing}</span>
+            </div>
+          ) : (
+            <div>
+              <div className="uppercase tracking-wider text-[10px] font-bold text-indigo-400 mb-1">{t.analysis_title}</div>
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap font-sans text-slate-700 text-xs leading-relaxed">
+                {explanation}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
