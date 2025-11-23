@@ -4,6 +4,7 @@ import { AISettings, TestTool, ProgrammingLanguage } from '../types';
 const SETTINGS_KEY = 'xpath_gen_ai_settings';
 const TOOL_KEY = 'xpath_gen_tool';
 const LANG_KEY = 'xpath_gen_language';
+const PROG_LANG_KEY = 'xpath_gen_prog_language';
 
 export const getSettings = (): AISettings => {
   try {
@@ -42,14 +43,22 @@ export const saveStoredTool = (tool: TestTool) => {
   localStorage.setItem(TOOL_KEY, tool);
 };
 
-export const getStoredLanguage = (): ProgrammingLanguage => {
+// UI Language (En/Vi)
+export const getStoredLanguage = (): string => {
+   // Legacy reasons, this file handled settings, translations.ts handled UI lang. 
+   // This export might not be used here but keeping for safety if referenced.
+   return 'en';
+}
+
+// Programming Language (Java, Python...)
+export const getStoredProgLang = (): ProgrammingLanguage => {
   try {
-    return (localStorage.getItem(LANG_KEY) as ProgrammingLanguage) || 'java';
+    return (localStorage.getItem(PROG_LANG_KEY) as ProgrammingLanguage) || 'java';
   } catch {
     return 'java';
   }
 };
 
-export const saveStoredLanguage = (lang: ProgrammingLanguage) => {
-  localStorage.setItem(LANG_KEY, lang);
+export const saveStoredProgLang = (lang: ProgrammingLanguage) => {
+  localStorage.setItem(PROG_LANG_KEY, lang);
 };

@@ -1,18 +1,22 @@
 
 export enum PriorityLevel {
+  PLAYWRIGHT_ROLE = 0, // Playwright getByRole (Best)
   ROBUST_ID = 1,       // By.id (Safe)
   NAME = 2,            // By.name
-  LINK_TEXT = 3,       // By.linkText
-  CSS_ID = 4,          // css=#id
-  CSS_CLASS = 5,       // css=.class
-  CSS_ATTR = 6,        // css=[attr=val]
-  XPATH_TEXT = 7,      // xpath=//*[text()='...']
-  XPATH_LABEL = 8,     // xpath=//label.../input (New Strategy)
-  XPATH_COMPLEX = 9,   // xpath complex
-  DYNAMIC_ID = 10      // By.id (Unsafe/Dynamic)
+  LABEL_FOR = 3,       // <label for="id">
+  LINK_TEXT = 4,       // By.linkText
+  PLAYWRIGHT_TEXT = 5, // getByText
+  CSS_ID = 6,          // css=#id
+  CSS_CLASS = 7,       // css=.class
+  CSS_ATTR = 8,        // css=[attr=val]
+  XPATH_TEXT = 9,      // xpath=//*[text()='...']
+  XPATH_LABEL = 10,     // xpath=//label.../input (New Strategy)
+  XPATH_CONTEXT = 11,   // xpath=//parent[@id]/descendant
+  XPATH_COMPLEX = 12,   // xpath complex
+  DYNAMIC_ID = 13      // By.id (Unsafe/Dynamic)
 }
 
-export type LocatorMethod = 'id' | 'name' | 'linkText' | 'partialLinkText' | 'css' | 'xpath';
+export type LocatorMethod = 'id' | 'name' | 'linkText' | 'partialLinkText' | 'css' | 'xpath' | 'role' | 'label' | 'placeholder' | 'text';
 
 export type TestTool = 
   | 'selenium' 
@@ -34,6 +38,7 @@ export type ProgrammingLanguage =
 
 export interface GeneratedLocator {
   id: string;
+  elementName?: string; // Optional: Human readable name of the element (e.g., "Login Button")
   method: LocatorMethod;
   value: string;         // The raw locator string (e.g., "submit-btn", "//div...")
   codeSnippet: string;   // Generated code for specific framework

@@ -1,3 +1,4 @@
+
 import { Language } from '../types';
 
 export const getStoredLanguage = (): Language => {
@@ -21,7 +22,7 @@ export const translations = {
   en: {
     header: {
       title: 'Smart XPath Generator',
-      subtitle: 'Selenium Locator Expert',
+      subtitle: 'Locator Expert',
       generator: 'Generator',
       history: 'History',
       settings: 'Settings'
@@ -30,17 +31,25 @@ export const translations = {
       step: 'Paste HTML',
       clear: 'Clear',
       label: 'OuterHTML (from DevTools)',
-      placeholder: '<button id="btn-login" name="login" class="btn primary">Sign In</button>',
-      tip: 'Tip: Inspect element, right click > Copy > Copy outerHTML',
+      placeholder: '<div class="login-form"><label for="u">User</label><input id="u" type="text" /></div>',
+      tip: 'Tip: Paste a block of HTML (Parent + Child) for context-aware locators.',
       error_empty: 'Please paste some HTML code first.',
       error_invalid: 'Input does not look like valid HTML tag.',
       error_failed: 'Could not extract any meaningful selectors. Try a different snippet.',
-      waiting: 'Waiting for HTML input...'
+      waiting: 'Waiting for HTML input...',
+      deep_scan: 'Deep Scan',
+      deep_scan_tip: 'Analyze all interactive elements inside container'
     },
     results: {
       step: 'Results',
       unsatisfied: 'Not satisfied? Ask AI',
-      chat_tip: 'Open chat to refine this strategy.'
+      chat_tip: 'Open chat to refine this strategy.',
+      root_element: 'Root Element',
+      child_element: 'Child Element',
+      search_placeholder: 'Filter by element name, ID, XPath...',
+      no_results: 'No matching locators found.',
+      export_pom: 'Export POM',
+      pom_export: 'Page Object Model Export'
     },
     card: {
       best_choice: 'Best Choice',
@@ -73,13 +82,13 @@ export const translations = {
     },
     chat: {
       title: 'AI Assistant',
-      welcome: 'Hi! I am your Selenium AI Assistant. Need help with a complex XPath or debugging text?',
+      welcome: 'Hi! I am your QA AI Assistant. Need help with a complex XPath or debugging text?',
       placeholder: 'Ask about Selenium or selectors...',
       error: 'Sorry, I encountered an error connecting to AI.'
     },
     generator: {
-      id_robust: 'Fastest & most stable. Preferred by Selenium best practices.',
-      id_dynamic: 'Warning: ID looks dynamic (random numbers). May break on next run.',
+      id_robust: 'Fastest & most stable. Preferred best practice.',
+      id_dynamic: 'Warning: ID looks dynamic/generated. May break on next run.',
       name: 'Very fast. Second best option for Form elements.',
       link_text: 'Best for <a> tags. Matches exact link text.',
       css_id: 'High performance CSS selector using ID.',
@@ -90,13 +99,14 @@ export const translations = {
       xpath_text_exact: 'Exact match. Simple and effective for clean text.',
       xpath_contains: 'Flexible. Matches partial text content.',
       xpath_attr: 'Fallback attribute selection.',
-      xpath_label: 'Robust Form Strategy. Locates input relative to its Label text.'
+      xpath_label: 'Robust Form Strategy. Locates input via its Label text.',
+      xpath_context: 'Context-Aware. Uses a stable parent ID as an anchor.'
     }
   },
   vi: {
     header: {
       title: 'Smart XPath Generator',
-      subtitle: 'Chuyên gia Selenium Locator',
+      subtitle: 'Chuyên gia Locator',
       generator: 'Công cụ',
       history: 'Lịch sử',
       settings: 'Cài đặt'
@@ -105,17 +115,25 @@ export const translations = {
       step: 'Dán mã HTML',
       clear: 'Xóa',
       label: 'OuterHTML (từ DevTools)',
-      placeholder: '<button id="btn-login" name="login" class="btn primary">Đăng nhập</button>',
-      tip: 'Mẹo: Inspect phần tử, chuột phải > Copy > Copy outerHTML',
+      placeholder: '<div class="login-form"><label for="u">User</label><input id="u" type="text" /></div>',
+      tip: 'Mẹo: Dán cả thẻ cha và con để tạo Locator dựa trên ngữ cảnh.',
       error_empty: 'Vui lòng dán mã HTML vào trước.',
       error_invalid: 'Dữ liệu nhập vào không giống thẻ HTML hợp lệ.',
       error_failed: 'Không tìm thấy selector nào phù hợp. Hãy thử đoạn mã khác.',
-      waiting: 'Đang chờ nhập HTML...'
+      waiting: 'Đang chờ nhập HTML...',
+      deep_scan: 'Quét Sâu',
+      deep_scan_tip: 'Tự động tìm tất cả nút, ô nhập liệu bên trong'
     },
     results: {
       step: 'Kết quả',
       unsatisfied: 'Chưa hài lòng?',
-      chat_tip: 'Hỏi AI để tối ưu thêm.'
+      chat_tip: 'Hỏi AI để tối ưu thêm.',
+      root_element: 'Thẻ Gốc',
+      child_element: 'Phần tử con',
+      search_placeholder: 'Tìm theo tên, ID, XPath...',
+      no_results: 'Không tìm thấy kết quả phù hợp.',
+      export_pom: 'Xuất POM',
+      pom_export: 'Xuất Page Object Model'
     },
     card: {
       best_choice: 'Khuyên dùng',
@@ -148,13 +166,13 @@ export const translations = {
     },
     chat: {
       title: 'Trợ lý AI',
-      welcome: 'Xin chào! Tôi là trợ lý AI về Selenium. Bạn cần giúp đỡ về XPath hay debug lỗi?',
+      welcome: 'Xin chào! Tôi là trợ lý AI về Selenium/Playwright. Bạn cần giúp đỡ gì?',
       placeholder: 'Hỏi về Selenium hoặc selectors...',
       error: 'Xin lỗi, tôi gặp lỗi khi kết nối với AI.'
     },
     generator: {
-      id_robust: 'Nhanh & ổn định nhất. Ưu tiên số 1 trong Selenium.',
-      id_dynamic: 'Cảnh báo: ID có vẻ là động (số ngẫu nhiên). Dễ gây lỗi script.',
+      id_robust: 'Nhanh & ổn định nhất. Ưu tiên số 1.',
+      id_dynamic: 'Cảnh báo: ID có vẻ là động (sinh tự động). Dễ gây lỗi script.',
       name: 'Rất nhanh. Ưu tiên số 2 cho các phần tử Form.',
       link_text: 'Tốt nhất cho thẻ <a>. Tìm theo nội dung link.',
       css_id: 'Hiệu năng cao. CSS Selector dựa trên ID.',
@@ -165,7 +183,8 @@ export const translations = {
       xpath_text_exact: 'Chính xác tuyệt đối. Ngắn gọn, hiệu quả khi văn bản sạch.',
       xpath_contains: 'Linh hoạt. Khớp một phần nội dung văn bản.',
       xpath_attr: 'Dùng XPath với thuộc tính (Fallback).',
-      xpath_label: 'Chiến lược Form ổn định. Tìm Input dựa theo nhãn (Label) của nó.'
+      xpath_label: 'Chiến lược Form ổn định. Tìm Input dựa theo nhãn (Label) của nó.',
+      xpath_context: 'Ngữ cảnh hóa. Dùng ID của thẻ cha làm điểm neo ổn định.'
     }
   }
 };

@@ -92,7 +92,7 @@ export const SettingsModal: React.FC<Props> = ({ isOpen, onClose, language }) =>
               </button>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {t.api_key_note}
+              {t.api_key_note}.
             </p>
           </div>
 
