@@ -11,7 +11,7 @@ import { getHistory, saveHistoryItem, clearHistory, checkExpiration, updateLastA
 import { getStoredLanguage, saveLanguage, translations } from './utils/translations';
 import { getStoredTool, saveStoredTool, getStoredProgLang, saveStoredProgLang } from './utils/settingsStorage';
 import { generatePOM } from './utils/pomGenerator'; 
-import { GeneratedLocator, HistoryItem, Language, TestTool, ProgrammingLanguage } from './types';
+import { GeneratedLocator, HistoryItem, Language, TestTool, ProgrammingLanguage, PriorityLevel } from './types';
 
 // Define ResultGroup props
 interface ResultGroupProps {
@@ -20,15 +20,16 @@ interface ResultGroupProps {
   htmlInput: string;
   onOpenSettings: () => void;
   language: Language;
+  id?: string; // For scrolling
 }
 
 // Move ResultGroup outside of App to avoid re-creation on every render
-const ResultGroup: React.FC<ResultGroupProps> = ({ group, isRoot, htmlInput, onOpenSettings, language }) => {
+const ResultGroup: React.FC<ResultGroupProps> = ({ group, isRoot, htmlInput, onOpenSettings, language, id }) => {
   const [showAll, setShowAll] = useState(false);
   const itemsToShow = isRoot || showAll ? group.items : group.items.slice(0, 1);
   
   return (
-    <div className="w-full relative">
+    <div id={id} className="w-full relative scroll-mt-24 transition-all duration-500">
       {!isRoot && (
          <div className="flex items-center mb-3">
            <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-slate-300"></div>
@@ -85,6 +86,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [deepScan, setDeepScan] = useState(false);
   const [filterText, setFilterText] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [hideUnstable, setHideUnstable] = useState(false);
   
   const [language, setLanguage] = useState<Language>(getStoredLanguage());
   const [tool, setTool] = useState<TestTool>(getStoredTool());
@@ -128,14 +131,7 @@ function App() {
 
   const handleExportPOM = () => {
     if (groupedResults.length === 0) return;
-    
-    // For each group, take the BEST (first) locator after filtering is applied
-    // Or take all results if we want to export exactly what's visible?
-    // Usually POM exports *all* found elements.
-    
-    // Strategy: Extract the first locator from *every* group found in deep scan
     const bestLocators = groupedResults.map(g => g.items[0]);
-    
     const code = generatePOM(bestLocators, tool, progLang);
     setPomCode(code);
     setIsPOMOpen(true);
@@ -150,6 +146,7 @@ function App() {
   useEffect(() => {
     if (results.length === 0) {
       setGroupedResults([]);
+      setActiveCategory('All'); // Reset category on new results
       return;
     }
 
@@ -174,30 +171,89 @@ function App() {
 
   }, [results, deepScan, t.results.root_element]);
 
-  const filteredGroupedResults = useMemo(() => {
-    if (!filterText.trim()) return groupedResults;
+  // Helper to determine category for filtering
+  const getCategoryFromTag = (tag?: string) => {
+    if (!tag) return 'Other';
+    const t = tag.toLowerCase();
+    if (t === 'a') return 'Link';
+    if (t === 'button' || (t === 'input' && ['submit','button','reset'].includes(''))) return 'Button'; // Type check omitted for simplicity
+    if (['input', 'textarea', 'select'].includes(t)) return 'Input';
+    if (['img', 'svg'].includes(t)) return 'Image';
+    if (['h1','h2','h3','h4','h5','h6','p','span','div','li','td','label','strong','b'].includes(t)) return 'Text';
+    return 'Other';
+  };
 
-    const lowerFilter = filterText.toLowerCase();
+  // Extract categories from results
+  const categories = useMemo(() => {
+    const stats: Record<string, number> = { 'All': 0 };
+    
+    groupedResults.forEach(group => {
+      if (!group.items.length) return;
+      // Assume all items in a group belong to same element type
+      const tag = group.items[0].tagName;
+      const cat = getCategoryFromTag(tag);
+      
+      stats['All']++;
+      stats[cat] = (stats[cat] || 0) + 1;
+    });
+
+    // Sort: All first, then by count descending
+    return Object.entries(stats)
+      .filter(([_, count]) => count > 0)
+      .sort((a, b) => {
+        if (a[0] === 'All') return -1;
+        if (b[0] === 'All') return 1;
+        return b[1] - a[1];
+      });
+  }, [groupedResults]);
+
+  const filteredGroupedResults = useMemo(() => {
+    const lowerFilter = filterText.toLowerCase().trim();
 
     return groupedResults.map(group => {
-      if (group.name.toLowerCase().includes(lowerFilter)) {
-        return group;
+      // 1. Filter by Category
+      if (activeCategory !== 'All') {
+        const tag = group.items[0]?.tagName;
+        if (getCategoryFromTag(tag) !== activeCategory) {
+          return null;
+        }
       }
 
-      const matchingItems = group.items.filter(item => 
-        item.value.toLowerCase().includes(lowerFilter) || 
-        item.method.toLowerCase().includes(lowerFilter)
-      );
+      // 2. Filter by Search Text (Group Name Match)
+      const matchesGroupText = !lowerFilter || group.name.toLowerCase().includes(lowerFilter);
 
-      if (matchingItems.length > 0) {
-        return { ...group, items: matchingItems };
-      }
+      // 3. Filter Items within Group
+      const filteredItems = group.items.filter(item => {
+        // Stability Filter
+        if (hideUnstable && (item.stability === 'Low' || item.priority === PriorityLevel.DYNAMIC_ID)) {
+          return false;
+        }
+        
+        // Text Filter (if group name matched, show all valid items; else filter by locator value)
+        if (!matchesGroupText) {
+           return item.value.toLowerCase().includes(lowerFilter) || 
+                  item.method.toLowerCase().includes(lowerFilter);
+        }
+        
+        return true;
+      });
 
-      return null;
+      if (filteredItems.length === 0) return null;
+
+      return { ...group, items: filteredItems };
     }).filter(g => g !== null) as {name: string, items: GeneratedLocator[]}[];
 
-  }, [groupedResults, filterText]);
+  }, [groupedResults, filterText, activeCategory, hideUnstable]);
 
+  const handleJumpTo = (groupId: string) => {
+    const element = document.getElementById(groupId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add simple highlight effect
+      element.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2');
+      setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 2000);
+    }
+  };
 
   useEffect(() => {
     setHistoryItems(getHistory());
@@ -222,7 +278,6 @@ function App() {
 
     try {
       setError(null);
-      // Relaxed check: if it contains < and > it might be HTML
       if (!/<[a-z][\s\S]*>/i.test(inputToProcess)) {
         setError(t.input.error_invalid);
         setResults([]);
@@ -342,13 +397,18 @@ function App() {
         </div>
 
         <div className="flex flex-col h-full overflow-hidden lg:col-span-7">
-          <div className="mb-2 shrink-0 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
-            <h2 className="text-lg font-semibold text-slate-700 flex items-center shrink-0">
-              <span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">2</span>
-              {t.results.step}
-            </h2>
-            
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="mb-3 shrink-0">
+            <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold text-slate-700 flex items-center shrink-0">
+                  <span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">2</span>
+                  {t.results.step}
+                  {results.length > 0 && (
+                    <span className="ml-2 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                      {results.length}
+                    </span>
+                  )}
+                </h2>
+                
                 {results.length > 0 && deepScan && (
                   <button
                     onClick={handleExportPOM}
@@ -360,40 +420,93 @@ function App() {
                     {t.results.export_pom}
                   </button>
                 )}
-
-                {results.length > 0 && (
-                  <div className="relative flex-1 sm:w-64">
-                    <input
-                      type="text"
-                      value={filterText}
-                      onChange={(e) => setFilterText(e.target.value)}
-                      placeholder={t.results.search_placeholder}
-                      className="w-full bg-white text-xs pl-8 pr-3 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 placeholder-slate-400"
-                    />
-                    <svg 
-                      className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    {filterText && (
-                      <button 
-                        onClick={() => setFilterText('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                )}
             </div>
+
+            {results.length > 0 && (
+              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm space-y-2">
+                
+                {/* Row 1: Search & Jump To */}
+                <div className="flex gap-2">
+                   <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        placeholder={t.results.search_placeholder}
+                        className="w-full bg-slate-50 text-xs pl-8 pr-3 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 placeholder-slate-400"
+                      />
+                      <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      {filterText && (
+                        <button onClick={() => setFilterText('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      )}
+                   </div>
+
+                   {deepScan && groupedResults.length > 1 && (
+                     <div className="relative w-1/3 min-w-[140px]">
+                       <select 
+                         onChange={(e) => { 
+                           if (e.target.value) {
+                             handleJumpTo(e.target.value);
+                             e.target.value = ""; // Reset
+                           }
+                         }}
+                         className="w-full bg-slate-50 text-xs pl-2 pr-6 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 appearance-none cursor-pointer truncate"
+                       >
+                         <option value="">{t.results.jump_to}</option>
+                         {groupedResults.map((group, idx) => (
+                           <option key={idx} value={`group-${idx}`}>
+                             {group.name}
+                           </option>
+                         ))}
+                       </select>
+                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                         </svg>
+                       </div>
+                     </div>
+                   )}
+                </div>
+
+                {/* Row 2: Filter Chips & Toggle */}
+                <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar max-w-full">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">{t.results.filter}</span>
+                      {categories.map(([cat, count]) => (
+                        <button
+                          key={cat}
+                          onClick={() => setActiveCategory(cat)}
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full border whitespace-nowrap transition-colors ${
+                            activeCategory === cat 
+                              ? 'bg-blue-100 text-blue-700 border-blue-200 font-semibold' 
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {cat} <span className="opacity-60 ml-0.5 text-[9px]">({count})</span>
+                        </button>
+                      ))}
+                   </div>
+                   
+                   <label className="flex items-center cursor-pointer shrink-0 ml-2">
+                      <input 
+                        type="checkbox" 
+                        checked={hideUnstable} 
+                        onChange={(e) => setHideUnstable(e.target.checked)} 
+                        className="sr-only peer" 
+                      />
+                      <div className="w-6 h-3 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] relative after:bg-white after:border-gray-300 after:border after:rounded-full after:h-2 after:w-2 after:transition-all peer-checked:bg-green-500 mr-1.5"></div>
+                      <span className={`text-[9px] font-medium uppercase tracking-tight ${hideUnstable ? 'text-green-600' : 'text-slate-400'}`}>{t.results.unstable_hide}</span>
+                   </label>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex-1 bg-slate-100/50 rounded-xl border border-dashed border-slate-300 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 bg-slate-100/50 rounded-xl border border-dashed border-slate-300 p-4 md:p-6 overflow-y-auto custom-scrollbar scroll-smooth">
             
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm flex items-start">
@@ -435,6 +548,7 @@ function App() {
                         htmlInput={htmlInput}
                         onOpenSettings={() => setIsSettingsOpen(true)}
                         language={language}
+                        id="group-0"
                       />
                     </div>
                   )}
@@ -443,7 +557,7 @@ function App() {
                     <div className="mt-4">
                       <div className="flex items-center mb-4 px-1">
                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded border border-slate-200 z-10 shadow-sm">
-                           {filterText ? 'Matches' : 'Inner Elements'}
+                           {activeCategory === 'All' ? 'Inner Elements' : `${activeCategory} Elements`}
                          </span>
                          <div className="h-px bg-slate-200 flex-1 ml-2"></div>
                       </div>
@@ -452,14 +566,18 @@ function App() {
                         {filteredGroupedResults.map((group, idx) => {
                            if (group.name === (deepScan ? t.results.root_element : 'ROOT_DEFAULT')) return null;
                            
+                           // Find the original index to use as ID for consistent scrolling
+                           const originalIndex = groupedResults.findIndex(g => g.name === group.name);
+
                            return (
                              <ResultGroup 
-                               key={idx} 
+                               key={originalIndex} 
                                group={group} 
                                isRoot={false} 
                                htmlInput={htmlInput}
                                onOpenSettings={() => setIsSettingsOpen(true)}
                                language={language}
+                               id={`group-${originalIndex}`}
                              />
                            );
                         })}

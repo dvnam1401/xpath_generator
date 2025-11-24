@@ -285,6 +285,7 @@ const generateLocatorsForNode = (
         results.push({
           id: `pw-role-${Math.random()}`,
           elementName,
+          tagName, // Added tagName
           method: 'role',
           value: roleName ? `Role: ${inferredRole}, Name: "${roleName}"` : `Role: ${inferredRole}`,
           codeSnippet: formatCode('role', '', tool, progLang, { role: inferredRole, name: roleName }),
@@ -299,6 +300,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `pw-placeholder-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'placeholder',
         value: placeholder,
         codeSnippet: formatCode('placeholder', placeholder, tool, progLang),
@@ -318,6 +320,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-id-robust-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'id',
         value: devToolsId,
         codeSnippet: formatCode('id', rawId, tool, progLang),
@@ -329,6 +332,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-css-id-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'css',
         value: `${tagName}#${rawId}`,
         codeSnippet: formatCode('css', `${tagName}#${rawId}`, tool, progLang),
@@ -340,6 +344,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-id-dynamic-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'id',
         value: devToolsId,
         codeSnippet: formatCode('id', rawId, tool, progLang),
@@ -356,6 +361,7 @@ const generateLocatorsForNode = (
     results.push({
       id: `strat-name-${Math.random()}`,
       elementName,
+      tagName, // Added tagName
       method: 'name',
       value: devToolsName,
       codeSnippet: formatCode('name', rawName, tool, progLang),
@@ -375,6 +381,7 @@ const generateLocatorsForNode = (
             results.push({
               id: `pw-label-${Math.random()}`,
               elementName,
+              tagName, // Added tagName
               method: 'label',
               value: labelText,
               codeSnippet: formatCode('label', labelText, tool, progLang),
@@ -388,6 +395,7 @@ const generateLocatorsForNode = (
              results.push({
                id: `strat-xpath-label-${Math.random()}`,
                elementName,
+               tagName, // Added tagName
                method: 'xpath',
                value: xpath,
                codeSnippet: formatCode('xpath', xpath, tool, progLang),
@@ -409,6 +417,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-link-text-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'linkText',
         value: devToolsXPath, 
         codeSnippet: formatCode('linkText', trimmedText, tool, progLang),
@@ -429,6 +438,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-css-class-${cls}-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'css',
         value: `${tagName}.${cls}`,
         codeSnippet: formatCode('css', `${tagName}.${cls}`, tool, progLang),
@@ -444,6 +454,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-css-multi-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'css',
         value: `${tagName}${multiClass}`,
         codeSnippet: formatCode('css', `${tagName}${multiClass}`, tool, progLang),
@@ -470,6 +481,7 @@ const generateLocatorsForNode = (
         results.push({
           id: `strat-css-attr-${name}-${Math.random()}`,
           elementName,
+          tagName, // Added tagName
           method: 'css',
           value: `${tagName}[${name}='${val}']`,
           codeSnippet: formatCode('css', `${tagName}[${name}='${val}']`, tool, progLang),
@@ -483,6 +495,7 @@ const generateLocatorsForNode = (
         results.push({
           id: `strat-xpath-attr-${name}-${Math.random()}`,
           elementName,
+          tagName, // Added tagName
           method: 'xpath',
           value: xpathAttr,
           codeSnippet: formatCode('xpath', xpathAttr, tool, progLang),
@@ -504,6 +517,7 @@ const generateLocatorsForNode = (
       results.push({
         id: `strat-xpath-text-exact-${Math.random()}`,
         elementName,
+        tagName, // Added tagName
         method: 'xpath',
         value: xpath,
         codeSnippet: formatCode('xpath', xpath, tool, progLang),
@@ -522,6 +536,7 @@ const generateLocatorsForNode = (
              results.push({
                 id: `strat-xpath-text-class-${Math.random()}`,
                 elementName,
+                tagName, // Added tagName
                 method: 'xpath',
                 value: xpathCombo,
                 codeSnippet: formatCode('xpath', xpathCombo, tool, progLang),
@@ -539,6 +554,7 @@ const generateLocatorsForNode = (
         results.push({
             id: `strat-xpath-text-norm-${Math.random()}`,
             elementName,
+            tagName, // Added tagName
             method: 'xpath',
             value: xpathNorm,
             codeSnippet: formatCode('xpath', xpathNorm, tool, progLang),
@@ -560,6 +576,7 @@ const generateLocatorsForNode = (
            results.push({
               id: `strat-xpath-contains-text-${Math.random()}`,
               elementName,
+              tagName, // Added tagName
               method: 'xpath',
               value: xpath,
               codeSnippet: formatCode('xpath', xpath, tool, progLang),
@@ -575,6 +592,7 @@ const generateLocatorsForNode = (
            results.push({
               id: `strat-xpath-contains-dot-${Math.random()}`,
               elementName,
+              tagName, // Added tagName
               method: 'xpath',
               value: xpathDot,
               codeSnippet: formatCode('xpath', xpathDot, tool, progLang),

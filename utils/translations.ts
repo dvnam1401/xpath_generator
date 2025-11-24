@@ -49,7 +49,11 @@ export const translations = {
       search_placeholder: 'Filter by element name, ID, XPath...',
       no_results: 'No matching locators found.',
       export_pom: 'Export POM',
-      pom_export: 'Page Object Model Export'
+      pom_export: 'Page Object Model Export',
+      filter: 'Show:',
+      all: 'All',
+      unstable_hide: 'Stable Only',
+      jump_to: 'Jump to element...'
     },
     card: {
       best_choice: 'Best Choice',
@@ -133,7 +137,11 @@ export const translations = {
       search_placeholder: 'Tìm theo tên, ID, XPath...',
       no_results: 'Không tìm thấy kết quả phù hợp.',
       export_pom: 'Xuất POM',
-      pom_export: 'Xuất Page Object Model'
+      pom_export: 'Xuất Page Object Model',
+      filter: 'Hiển thị:',
+      all: 'Tất cả',
+      unstable_hide: 'Chỉ hiện Ổn định',
+      jump_to: 'Nhảy tới phần tử...'
     },
     card: {
       best_choice: 'Khuyên dùng',

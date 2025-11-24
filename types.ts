@@ -39,6 +39,7 @@ export type ProgrammingLanguage =
 export interface GeneratedLocator {
   id: string;
   elementName?: string; // Optional: Human readable name of the element (e.g., "Login Button")
+  tagName?: string;     // New: Tag name for filtering (e.g., "button", "input")
   method: LocatorMethod;
   value: string;         // The raw locator string (e.g., "submit-btn", "//div...")
   codeSnippet: string;   // Generated code for specific framework
