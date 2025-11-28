@@ -626,19 +626,19 @@ const cssToXPath = (cssSelector: string): string | null => {
     return `//${tagIdMatch[1]}[@id='${tagIdMatch[2]}']`;
   }
 
-  // Class: .myClass -> //*[contains(@class, 'myClass')]
-  // Note: This is a simplified conversion. Ideally should check spaces concat.
+  // Class: .myClass -> //*[contains(concat(' ', normalize-space(@class), ' '), ' myClass ')]
+  // Robust check handles "btn btn-primary" correctly
   if (cssSelector.startsWith('.')) {
     const cls = cssSelector.substring(1);
     if (/^[\w-]+$/.test(cls)) {
-      return `//*[contains(@class, '${cls}')]`;
+      return `//*[contains(concat(' ', normalize-space(@class), ' '), ' ${cls} ')]`;
     }
   }
 
-  // Tag+Class: div.myClass -> //div[contains(@class, 'myClass')]
+  // Tag+Class: div.myClass -> //div[contains(concat(' ', normalize-space(@class), ' '), ' myClass ')]
   const tagClassMatch = cssSelector.match(/^(\w+)\.([\w-]+)$/);
   if (tagClassMatch) {
-    return `//${tagClassMatch[1]}[contains(@class, '${tagClassMatch[2]}')]`;
+    return `//${tagClassMatch[1]}[contains(concat(' ', normalize-space(@class), ' '), ' ${tagClassMatch[2]} ')]`;
   }
 
   // Attribute: [name='foo'] -> //*[@name='foo']
@@ -721,10 +721,6 @@ const handleDuplicates = (results: GeneratedLocator[], tool: TestTool): Generate
            newValue = `(${xpathEquivalent})[${idx}]`;
            newMethod = 'xpath'; // Switch method to XPath
            // Re-generate code snippet using the new XPath value
-           // We need to extract the driver syntax from the original tool/lang setup. 
-           // Since we don't have the 'tool' and 'lang' handy in a clean way to call formatCode fully fresh without props drilling,
-           // we can try to patch the existing code snippet.
-           // Or simpler: Generate a basic XPath snippet.
            
            // Heuristic patch: replace the CSS finding part with XPath finding part
            if (newCode.includes('By.cssSelector')) {

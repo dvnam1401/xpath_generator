@@ -3,6 +3,17 @@ import { GeneratedLocator, TestTool, ProgrammingLanguage } from '../types';
 
 // --- Naming Utils ---
 
+/**
+ * Removes accents and transliterates specific characters (like Vietnamese Đ) to ASCII.
+ */
+const removeAccents = (str: string): string => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+};
+
 const toCamelCase = (str: string): string => {
   return str
     .toLowerCase()
@@ -23,7 +34,12 @@ const toSnakeCase = (str: string): string => {
 };
 
 const cleanVarName = (name: string, lang: ProgrammingLanguage): string => {
-  let clean = name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  // 1. Transliterate (e.g., "Đăng Nhập" -> "Dang Nhap")
+  const asciiName = removeAccents(name);
+  
+  // 2. Remove special chars
+  let clean = asciiName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  
   if (!clean) clean = 'element_' + Math.floor(Math.random() * 1000);
   
   if (lang === 'python' || lang === 'ruby' || lang === 'robot') {
@@ -48,6 +64,7 @@ export const generatePOM = (
   
   // Track used variable names to ensure uniqueness
   const usedNames = new Set<string>();
+  const locatorMap = new Map<GeneratedLocator, string>();
 
   const getUniqueName = (baseName: string): string => {
     let candidate = baseName;
@@ -59,6 +76,13 @@ export const generatePOM = (
     usedNames.add(candidate);
     return candidate;
   };
+
+  // Pre-calculate unique names for all locators to ensure consistency between definition and usage
+  locators.forEach(loc => {
+    const rawName = cleanVarName(loc.elementName || 'element', lang);
+    const varName = getUniqueName(rawName);
+    locatorMap.set(loc, varName);
+  });
 
   // Header
   if (lang === 'java') {
@@ -93,8 +117,7 @@ export const generatePOM = (
 
   // Variables
   locators.forEach(loc => {
-    const rawName = cleanVarName(loc.elementName || 'element', lang);
-    const varName = getUniqueName(rawName);
+    const varName = locatorMap.get(loc)!;
     
     if (lang === 'java') {
       // Selenium Java (By)
@@ -135,23 +158,8 @@ export const generatePOM = (
     lines.push(`    constructor(page: Page) {`);
     lines.push(`        this.page = page;`);
     
-    // Reset used names for the constructor loop since we need to match the variables defined above
-    // Actually, we can iterate locators again and regenerate names in the same deterministic way
-    const constructorUsedNames = new Set<string>();
-    const getConstructorUniqueName = (baseName: string): string => {
-        let candidate = baseName;
-        let counter = 2;
-        while (constructorUsedNames.has(candidate)) {
-          candidate = `${baseName}${counter}`;
-          counter++;
-        }
-        constructorUsedNames.add(candidate);
-        return candidate;
-    };
-
     locators.forEach(loc => {
-        const rawName = cleanVarName(loc.elementName || 'element', lang);
-        const varName = getConstructorUniqueName(rawName);
+        const varName = locatorMap.get(loc)!;
         
         // Try to extract proper Playwright locator syntax
         let code = loc.codeSnippet;

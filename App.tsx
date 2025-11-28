@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Header } from './components/Header';
 import { XPathResultCard } from './components/XPathResultCard';
 import { ChatWidget } from './components/ChatWidget';
@@ -29,13 +29,14 @@ const ResultGroup: React.FC<ResultGroupProps> = ({ group, isRoot, htmlInput, onO
   const itemsToShow = isRoot || showAll ? group.items : group.items.slice(0, 1);
   
   return (
-    <div id={id} className="w-full relative scroll-mt-24 transition-all duration-500">
+    // Increased scroll-mt to 48 (approx 190px) to ensure the element isn't hidden behind the sticky header when jumping
+    <div id={id} className="w-full relative scroll-mt-48 transition-all duration-500">
       {!isRoot && (
-         <div className="flex items-center mb-3">
-           <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-slate-300"></div>
-           <div className="absolute -left-[35px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-slate-400 rounded-full border-2 border-slate-50"></div>
+         <div className="flex items-center mb-3 group/marker">
+           <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-0.5 bg-slate-300 group-hover/marker:bg-blue-400 transition-colors"></div>
+           <div className="absolute -left-[35px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-slate-400 rounded-full border-2 border-slate-50 group-hover/marker:bg-blue-500 transition-colors"></div>
            
-           <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200 uppercase tracking-tight shadow-sm">
+           <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200 uppercase tracking-tight shadow-sm group-hover/marker:text-blue-600 group-hover/marker:border-blue-200 transition-colors">
              {group.name}
            </span>
          </div>
@@ -56,7 +57,7 @@ const ResultGroup: React.FC<ResultGroupProps> = ({ group, isRoot, htmlInput, onO
         {!isRoot && group.items.length > 1 && (
            <button 
              onClick={() => setShowAll(!showAll)}
-             className="text-[10px] text-blue-600 font-medium hover:underline flex items-center ml-1 bg-slate-50 px-2 py-1 rounded border border-slate-100 w-fit"
+             className="text-[10px] text-blue-600 font-medium hover:underline flex items-center ml-1 bg-slate-50 px-2 py-1 rounded border border-slate-100 w-fit hover:bg-blue-50 transition-colors"
            >
              {showAll ? (
                <>
@@ -102,6 +103,9 @@ function App() {
   const [pomCode, setPomCode] = useState('');
 
   const [groupedResults, setGroupedResults] = useState<{name: string, items: GeneratedLocator[]}[]>([]);
+
+  // Refs for scrolling
+  const innerListRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language];
 
@@ -224,8 +228,8 @@ function App() {
 
       // 3. Filter Items within Group
       const filteredItems = group.items.filter(item => {
-        // Stability Filter
-        if (hideUnstable && (item.stability === 'Low' || item.priority === PriorityLevel.DYNAMIC_ID)) {
+        // Stability Filter: Strict High Check if filter enabled
+        if (hideUnstable && item.stability !== 'High') {
           return false;
         }
         
@@ -247,11 +251,14 @@ function App() {
 
   const handleJumpTo = (groupId: string) => {
     const element = document.getElementById(groupId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Add simple highlight effect
-      element.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2');
-      setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 2000);
+    if (element && innerListRef.current) {
+        // Scroll the specific container, not the window
+        // block: 'start' aligns it to the top of the scroll container
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Add simple highlight effect
+        element.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2');
+        setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 2000);
     }
   };
 
@@ -330,8 +337,14 @@ function App() {
     setHistoryItems([]);
   };
 
+  // Split results: 
+  const unfilteredRootName = groupedResults.length > 0 ? groupedResults[0].name : null;
+  const rootGroup = filteredGroupedResults.find(g => g.name === unfilteredRootName);
+  const innerGroups = filteredGroupedResults.filter(g => g !== rootGroup);
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans">
+    // LOCKED SCREEN: h-screen and overflow-hidden on root ensures page doesn't scroll
+    <div className="h-screen flex flex-col bg-slate-50 text-slate-800 font-sans overflow-hidden">
       <Header 
         onHistoryClick={() => setIsHistoryOpen(true)} 
         onSettingsClick={() => setIsSettingsOpen(true)}
@@ -343,9 +356,11 @@ function App() {
         onProgLangChange={handleProgLangChange}
       />
       
-      <main className="flex-1 max-w-[96%] 2xl:max-w-[1800px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-[calc(100vh-100px)] min-h-[600px]">
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-[96%] 2xl:max-w-[1800px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full min-h-0">
         
-        <div className="flex flex-col h-full overflow-hidden lg:col-span-5">
+        {/* LEFT COLUMN: INPUT */}
+        <div className="flex flex-col h-full overflow-hidden lg:col-span-5 min-h-0">
           <div className="mb-2 flex justify-between items-center shrink-0">
             <div className="flex items-center space-x-2">
               <h2 className="text-lg font-semibold text-slate-700 flex items-center">
@@ -396,203 +411,216 @@ function App() {
           </p>
         </div>
 
-        <div className="flex flex-col h-full overflow-hidden lg:col-span-7">
-          <div className="mb-3 shrink-0">
-            <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-slate-700 flex items-center shrink-0">
-                  <span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">2</span>
-                  {t.results.step}
-                  {results.length > 0 && (
-                    <span className="ml-2 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                      {results.length}
-                    </span>
-                  )}
-                </h2>
-                
-                {results.length > 0 && deepScan && (
-                  <button
-                    onClick={handleExportPOM}
-                    className="shrink-0 bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded border border-indigo-200 hover:bg-indigo-100 transition flex items-center"
-                  >
-                    <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    {t.results.export_pom}
-                  </button>
-                )}
-            </div>
-
-            {results.length > 0 && (
-              <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm space-y-2">
-                
-                {/* Row 1: Search & Jump To */}
-                <div className="flex gap-2">
-                   <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        placeholder={t.results.search_placeholder}
-                        className="w-full bg-slate-50 text-xs pl-8 pr-3 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 placeholder-slate-400"
-                      />
-                      <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      {filterText && (
-                        <button onClick={() => setFilterText('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        {/* RIGHT COLUMN: RESULTS */}
+        <div className="flex flex-col h-full overflow-hidden lg:col-span-7 min-h-0">
+          
+          {/* Unified Scroll Container */}
+          <div className="flex-1 bg-slate-100/50 rounded-xl border border-dashed border-slate-300 flex flex-col overflow-hidden relative">
+            
+            <div 
+              ref={innerListRef}
+              className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth"
+            >
+              {/* Sticky Header Section */}
+              <div className="sticky top-0 z-30 bg-slate-50 border-b border-slate-200/60 shadow-sm px-4 md:px-6 pt-4 pb-3">
+                  <div className="flex justify-between items-center mb-2">
+                      <h2 className="text-lg font-semibold text-slate-700 flex items-center shrink-0">
+                        <span className="bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">2</span>
+                        {t.results.step}
+                        {results.length > 0 && (
+                          <span className="ml-2 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                            {results.length}
+                          </span>
+                        )}
+                      </h2>
+                      
+                      {results.length > 0 && deepScan && (
+                        <button
+                          onClick={handleExportPOM}
+                          className="shrink-0 bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded border border-indigo-200 hover:bg-indigo-100 transition flex items-center"
+                        >
+                          <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          {t.results.export_pom}
                         </button>
                       )}
-                   </div>
+                  </div>
 
-                   {deepScan && groupedResults.length > 1 && (
-                     <div className="relative w-1/3 min-w-[140px]">
-                       <select 
-                         onChange={(e) => { 
-                           if (e.target.value) {
-                             handleJumpTo(e.target.value);
-                             e.target.value = ""; // Reset
-                           }
-                         }}
-                         className="w-full bg-slate-50 text-xs pl-2 pr-6 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 appearance-none cursor-pointer truncate"
-                       >
-                         <option value="">{t.results.jump_to}</option>
-                         {groupedResults.map((group, idx) => (
-                           <option key={idx} value={`group-${idx}`}>
-                             {group.name}
-                           </option>
-                         ))}
-                       </select>
-                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                         </svg>
-                       </div>
-                     </div>
-                   )}
-                </div>
-
-                {/* Row 2: Filter Chips & Toggle */}
-                <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar max-w-full">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">{t.results.filter}</span>
-                      {categories.map(([cat, count]) => (
-                        <button
-                          key={cat}
-                          onClick={() => setActiveCategory(cat)}
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full border whitespace-nowrap transition-colors ${
-                            activeCategory === cat 
-                              ? 'bg-blue-100 text-blue-700 border-blue-200 font-semibold' 
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {cat} <span className="opacity-60 ml-0.5 text-[9px]">({count})</span>
-                        </button>
-                      ))}
-                   </div>
-                   
-                   <label className="flex items-center cursor-pointer shrink-0 ml-2">
-                      <input 
-                        type="checkbox" 
-                        checked={hideUnstable} 
-                        onChange={(e) => setHideUnstable(e.target.checked)} 
-                        className="sr-only peer" 
-                      />
-                      <div className="w-6 h-3 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] relative after:bg-white after:border-gray-300 after:border after:rounded-full after:h-2 after:w-2 after:transition-all peer-checked:bg-green-500 mr-1.5"></div>
-                      <span className={`text-[9px] font-medium uppercase tracking-tight ${hideUnstable ? 'text-green-600' : 'text-slate-400'}`}>{t.results.unstable_hide}</span>
-                   </label>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 bg-slate-100/50 rounded-xl border border-dashed border-slate-300 p-4 md:p-6 overflow-y-auto custom-scrollbar scroll-smooth">
-            
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm flex items-start">
-                <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {!htmlInput && groupedResults.length === 0 && !error && (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium">{t.input.waiting}</p>
-              </div>
-            )}
-
-            <div className="w-full">
-              {htmlInput && groupedResults.length > 0 && filteredGroupedResults.length === 0 && (
-                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                    <svg className="w-10 h-10 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p className="text-sm">{t.results.no_results}</p>
-                 </div>
-              )}
-
-              {filteredGroupedResults.length > 0 && (
-                <>
-                  {filteredGroupedResults[0].name === (deepScan ? t.results.root_element : 'ROOT_DEFAULT') && (
-                    <div className="mb-8">
-                      <ResultGroup 
-                        group={filteredGroupedResults[0]} 
-                        isRoot={true} 
-                        htmlInput={htmlInput}
-                        onOpenSettings={() => setIsSettingsOpen(true)}
-                        language={language}
-                        id="group-0"
-                      />
-                    </div>
-                  )}
-
-                  {(filteredGroupedResults.length > 1 || (filteredGroupedResults.length === 1 && filteredGroupedResults[0].name !== (deepScan ? t.results.root_element : 'ROOT_DEFAULT'))) && (
-                    <div className="mt-4">
-                      <div className="flex items-center mb-4 px-1">
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded border border-slate-200 z-10 shadow-sm">
-                           {activeCategory === 'All' ? 'Inner Elements' : `${activeCategory} Elements`}
-                         </span>
-                         <div className="h-px bg-slate-200 flex-1 ml-2"></div>
-                      </div>
+                  {results.length > 0 && (
+                    <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm space-y-2">
                       
-                      <div className="ml-4 pl-6 border-l-2 border-slate-200 space-y-8 pb-4">
-                        {filteredGroupedResults.map((group, idx) => {
-                           if (group.name === (deepScan ? t.results.root_element : 'ROOT_DEFAULT')) return null;
-                           
-                           // Find the original index to use as ID for consistent scrolling
-                           const originalIndex = groupedResults.findIndex(g => g.name === group.name);
+                      {/* Row 1: Search & Jump To */}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={filterText}
+                              onChange={(e) => setFilterText(e.target.value)}
+                              placeholder={t.results.search_placeholder}
+                              className="w-full bg-slate-50 text-xs pl-8 pr-3 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 placeholder-slate-400"
+                            />
+                            <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            {filterText && (
+                              <button onClick={() => setFilterText('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            )}
+                        </div>
 
-                           return (
-                             <ResultGroup 
-                               key={originalIndex} 
-                               group={group} 
-                               isRoot={false} 
-                               htmlInput={htmlInput}
-                               onOpenSettings={() => setIsSettingsOpen(true)}
-                               language={language}
-                               id={`group-${originalIndex}`}
-                             />
-                           );
-                        })}
+                        {deepScan && groupedResults.length > 1 && (
+                          <div className="relative w-1/3 min-w-[140px]">
+                            <select 
+                              onChange={(e) => { 
+                                if (e.target.value) {
+                                  handleJumpTo(e.target.value);
+                                  e.target.value = ""; // Reset
+                                }
+                              }}
+                              className="w-full bg-slate-50 text-xs pl-2 pr-6 py-1.5 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 appearance-none cursor-pointer truncate"
+                            >
+                              <option value="">{t.results.jump_to}</option>
+                              {groupedResults.map((group, idx) => (
+                                <option key={idx} value={`group-${idx}`}>
+                                  {group.name}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Row 2: Filter Chips & Toggle */}
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar max-w-full">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">{t.results.filter}</span>
+                            {categories.map(([cat, count]) => (
+                              <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`text-[10px] px-2.5 py-0.5 rounded-full border whitespace-nowrap transition-colors ${
+                                  activeCategory === cat 
+                                    ? 'bg-blue-100 text-blue-700 border-blue-200 font-semibold' 
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {cat} <span className="opacity-60 ml-0.5 text-[9px]">({count})</span>
+                              </button>
+                            ))}
+                        </div>
+                        
+                        <label className="flex items-center cursor-pointer shrink-0 ml-2">
+                            <input 
+                              type="checkbox" 
+                              checked={hideUnstable} 
+                              onChange={(e) => setHideUnstable(e.target.checked)} 
+                              className="sr-only peer" 
+                            />
+                            <div className="w-6 h-3 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] relative after:bg-white after:border-gray-300 after:border after:rounded-full after:h-2 after:w-2 after:transition-all peer-checked:bg-green-500 mr-1.5"></div>
+                            <span className={`text-[9px] font-medium uppercase tracking-tight ${hideUnstable ? 'text-green-600' : 'text-slate-400'}`}>{t.results.unstable_hide}</span>
+                        </label>
                       </div>
                     </div>
                   )}
-                </>
-              )}
-            </div>
-
-            {results.length > 0 && (
-              <div className="mt-8 pt-4 border-t border-slate-200 text-center pb-4">
-                 <p className="text-xs font-medium text-blue-600">{t.results.chat_tip}</p>
               </div>
-            )}
+
+              {/* Scrollable Content */}
+              <div className="p-4 md:p-6 pb-20">
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm flex items-start mb-6">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {error}
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!htmlInput && groupedResults.length === 0 && !error && (
+                  <div className="flex flex-col items-center justify-center text-slate-400 py-12">
+                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">{t.input.waiting}</p>
+                  </div>
+                )}
+
+                {/* No Results Filter State */}
+                {htmlInput && groupedResults.length > 0 && filteredGroupedResults.length === 0 && (
+                   <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                      <svg className="w-10 h-10 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <p className="text-sm">{t.results.no_results}</p>
+                   </div>
+                )}
+
+                {/* Results List */}
+                {filteredGroupedResults.length > 0 && (
+                  <>
+                    {/* Fixed Root Element (if exists) */}
+                    {rootGroup && (
+                      <div className="mb-8">
+                         <ResultGroup 
+                            group={rootGroup} 
+                            isRoot={true} 
+                            htmlInput={htmlInput}
+                            onOpenSettings={() => setIsSettingsOpen(true)}
+                            language={language}
+                            id="group-0"
+                          />
+                      </div>
+                    )}
+
+                    {/* Scrollable Inner Elements */}
+                    {innerGroups.length > 0 && (
+                      <div className="pt-2">
+                        {/* Sticky Section Header inside scroll view */}
+                        <div className="flex items-center mb-6 px-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded border border-slate-200 shadow-sm">
+                              {activeCategory === 'All' ? 'Inner Elements' : `${activeCategory} Elements`}
+                            </span>
+                            <div className="h-px bg-slate-200 flex-1 ml-2"></div>
+                        </div>
+                        
+                        <div className="ml-4 pl-6 border-l-2 border-slate-200 space-y-10 pb-4">
+                          {innerGroups.map((group) => {
+                              // Find original index for ID mapping
+                              const originalIndex = groupedResults.findIndex(g => g.name === group.name);
+                              return (
+                                <ResultGroup 
+                                  key={originalIndex} 
+                                  group={group} 
+                                  isRoot={false} 
+                                  htmlInput={htmlInput}
+                                  onOpenSettings={() => setIsSettingsOpen(true)}
+                                  language={language}
+                                  id={`group-${originalIndex}`}
+                                />
+                              );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chat Tip Footer */}
+                    <div className="mt-8 pt-4 border-t border-slate-200 text-center pb-4 text-xs font-medium text-blue-600/70">
+                        {t.results.chat_tip}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </main>
